@@ -85,8 +85,20 @@ Prerequisites: Node 22.9+ and one model API key:
 ```bash
 npm run setup                        # installs root, server and client dependencies
 cp server/.env.example server/.env   # then set GROQ_API_KEY (or XAI_API_KEY); MONGODB_URI is optional
+cp client/.env.example client/.env   # optional: VITE_API_URL, empty = Vite proxy
 npm run dev                          # API on :5070, app on http://localhost:5174
 ```
+
+| Variable | File | Purpose |
+|---|---|---|
+| `GROQ_API_KEY` / `XAI_API_KEY` | server/.env | Model key (one is required) |
+| `MONGODB_URI` | server/.env | Optional; empty = in memory. Include the db name: `...mongodb.net/skillbridge` |
+| `CORS_ORIGIN` | server/.env | Comma-separated browser origins allowed to call the API, e.g. `http://localhost:5174,https://your-app.vercel.app` |
+| `PORT` | server/.env | API port, default 5070 |
+| `VITE_API_URL` | client/.env | API base URL, e.g. `https://your-api.onrender.com`. Empty = same origin. Baked in at build time |
+
+Split deploy (frontend and API on different hosts): set `VITE_API_URL` on the frontend host to the API's URL,
+and add the frontend's URL to `CORS_ORIGIN` on the API host.
 
 Click **Try the sample resume and job** to see the whole flow. On Groq's free tier, a full run (analyze, tailor,
 one lesson, one quiz) takes about 10 seconds and 6–8K tokens. If the free tier's per-minute limit is hit, the

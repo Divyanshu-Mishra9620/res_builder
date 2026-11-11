@@ -36,8 +36,32 @@ function publicView(ws) {
 
 const addUsage = (ws, u) => ({ "usage.input": (ws.usage?.input ?? 0) + (u?.input ?? 0), "usage.output": (ws.usage?.output ?? 0) + (u?.output ?? 0) });
 
-export function createApp({ client } = {}) {
+/**
+ * CORS, for a client served from another origin (a deployed frontend, or Vite calling VITE_API_URL directly).
+ * `origins`: comma-separated list such as "http://localhost:5174,https://skillbridge.vercel.app", or "*" for any.
+ * Empty = same origin only (the Vite proxy, or this server serving client/dist).
+ */
+function cors(origins = "") {
+  const allowed = origins.split(",").map((o) => o.trim().replace(/\/+$/, "")).filter(Boolean);
+  const any = allowed.includes("*");
+  return (req, res, next) => {
+    const origin = req.headers.origin;
+    res.vary("Origin");
+    if (!origin || !(any || allowed.includes(origin))) return next();
+    res.set("Access-Control-Allow-Origin", origin);
+    if (req.method !== "OPTIONS") return next();
+    res.set({ // preflight: JSON and file uploads send a content-type the browser asks about first
+      "Access-Control-Allow-Methods": "GET, POST",
+      "Access-Control-Allow-Headers": "content-type",
+      "Access-Control-Max-Age": "600",
+    });
+    res.sendStatus(204);
+  };
+}
+
+export function createApp({ client, corsOrigin = process.env.CORS_ORIGIN } = {}) {
   const app = express();
+  app.use("/api", cors(corsOrigin));
   const wrap = (fn) => (req, res, next) => fn(req, res).catch(next);
   async function load(req, res) {
     const ws = await store.get(req.params.id);
